@@ -17,6 +17,14 @@
 #include <sound/tlv.h>
 #include "max98396.h"
 
+#define ULTRASOUND_DEMO
+
+#ifdef ULTRASOUND_DEMO
+#define SPK_GAIN_MAX 0x08
+#else
+#define SPK_GAIN_MAX 0x11
+#endif
+
 static struct reg_default max98396_reg[] = {
 	{MAX98396_R2000_SW_RESET, 0x00},
 	{MAX98396_R2001_INT_RAW1, 0x00},
@@ -580,7 +588,7 @@ static const struct snd_kcontrol_new max98396_snd_controls[] = {
 SOC_SINGLE_TLV("Digital Volume", MAX98396_R2090_AMP_VOL_CTRL,
 	0, 0x7F, 1, max98396_digital_tlv),
 SOC_SINGLE_TLV("Speaker Volume", MAX98396_R2091_AMP_PATH_GAIN,
-	0, 0x11, 0, max98396_spk_tlv),
+	0, SPK_GAIN_MAX, 0, max98396_spk_tlv),
 /* Volume Ramp Up/Down Enable*/
 SOC_SINGLE("Ramp Up Switch", MAX98396_R2092_AMP_DSP_CFG,
 	MAX98396_DSP_SPK_VOL_RMPUP_SHIFT, 1, 0),
@@ -686,12 +694,20 @@ static int max98396_probe(struct snd_soc_component *component)
 	/* Tx enable */
 	regmap_write(max98396->regmap,
 		MAX98396_R205F_PCM_TX_EN, 1);
-	/* PCM V MON enable */
-	regmap_write(max98396->regmap,
-		MAX98396_R205D_PCM_TX_SRC_EN, 1);		
 	/* Enable DC blocker */
 	regmap_update_bits(max98396->regmap,
 		MAX98396_R2092_AMP_DSP_CFG, 0x21, 0x01);
+#ifdef ULTRASOUND_DEMO
+	/* PCM V MON enable */
+	regmap_write(max98396->regmap,
+		MAX98396_R205D_PCM_TX_SRC_EN, 1);
+	/* Enable Wideband Filter on DSP Playback */
+	regmap_update_bits(max98396->regmap,
+		MAX98396_R2092_AMP_DSP_CFG, 0x40, 0x40);		
+	/* Enable Wideband Filter on V sense */
+	regmap_update_bits(max98396->regmap,
+		MAX98396_R20E0_IV_SENSE_PATH_CFG, 8, 8);
+#endif		
 	/* Enable IMON VMON DC blocker */
 	regmap_update_bits(max98396->regmap,
 		MAX98396_R20E0_IV_SENSE_PATH_CFG, 3, 3);
