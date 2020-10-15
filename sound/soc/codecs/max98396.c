@@ -17,8 +17,6 @@
 #include <sound/tlv.h>
 #include "max98396.h"
 
-#define ULTRASOUND_DEMO
-
 #ifdef ULTRASOUND_DEMO
 #define SPK_GAIN_MAX 0x08
 #else
@@ -196,6 +194,7 @@ static int max98396_dai_set_fmt(struct snd_soc_dai *codec_dai, unsigned int fmt)
 
 	switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
 	case SND_SOC_DAIFMT_NB_NF:
+	case SND_SOC_DAIFMT_NB_IF:
 		break;
 	case SND_SOC_DAIFMT_IB_NF:
 		invert = MAX98396_PCM_MODE_CFG_PCM_BCLKEDGE;
@@ -232,7 +231,7 @@ static int max98396_dai_set_fmt(struct snd_soc_dai *codec_dai, unsigned int fmt)
 		MAX98396_R2041_PCM_MODE_CFG,
 		MAX98396_PCM_MODE_CFG_FORMAT_MASK,
 		format << MAX98396_PCM_MODE_CFG_FORMAT_SHIFT);
-
+		
 	pr_info("[RYAN] %s out, format : %d", __func__, format);
 	return 0;
 }

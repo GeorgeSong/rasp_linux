@@ -16,7 +16,9 @@
 
 #include "../codecs/max98396.h"
 
+#ifdef ULTRASOUND_DEMO
 #define USE_TDM_MODE
+#endif
 
 #ifdef USE_TDM_MODE
 #define DAI_FMT_BASE (SND_SOC_DAIFMT_CBS_CFS | SND_SOC_DAIFMT_DSP_B | SND_SOC_DAIFMT_NB_NF)
@@ -58,7 +60,6 @@ static int snd_audioinjector_maxim_soundcard_hw_params
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	int ret = 0;
 	int sr = params_rate(params);
-	unsigned int daiFmt = 0; 
 
 #ifdef USE_TDM_MODE
 	// set TDM slot configuration vmon_slot_no 0 for Tx slots
@@ -78,13 +79,23 @@ static int snd_audioinjector_maxim_soundcard_hw_params
 		return ret;
 
 	pr_info("[RYAN] %s cpu tdm slot config ret : %d\n", __func__, ret);
-	
-	daiFmt = SND_SOC_DAIFMT_CBS_CFS|SND_SOC_DAIFMT_DSP_B|SND_SOC_DAIFMT_NB_NF;
-#else
-	daiFmt = SND_SOC_DAIFMT_CBS_CFS|SND_SOC_DAIFMT_I2S|SND_SOC_DAIFMT_NB_NF;
 #endif
 
 	pr_info("[RYAN] %s sample rate = %d\n", __func__, sr);
+
+	// set codec DAI configuration
+	ret = snd_soc_dai_set_fmt(rtd->codec_dai, DAI_FMT_BASE);
+ 	if (ret < 0)
+ 		return ret;
+	
+	pr_info("[RYAN] %s codec ret : %d\n", __func__, ret);
+			
+	// set cpu DAI configuration
+	ret = snd_soc_dai_set_fmt(rtd->cpu_dai, DAI_FMT_BASE);
+ 	if (ret < 0)
+ 		return ret;
+
+	pr_info("[RYAN] %s cpu ret : %d\n", __func__, ret);
 	
 #if 0
 	switch (sr){
