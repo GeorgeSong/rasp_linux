@@ -727,6 +727,7 @@ static int max98396_probe(struct snd_soc_component *component)
 			MAX98396_R2052_PCM_TX_HIZ_CTRL_7,
 			1 << (max98396->v_slot - 8), 0);
 
+#ifndef ULTRASOUND_DEMO
 	if (max98396->i_slot < 8)
 		regmap_update_bits(max98396->regmap,
 			MAX98396_R2053_PCM_TX_HIZ_CTRL_8,
@@ -735,6 +736,7 @@ static int max98396_probe(struct snd_soc_component *component)
 		regmap_update_bits(max98396->regmap,
 			MAX98396_R2052_PCM_TX_HIZ_CTRL_7,
 			1 << (max98396->i_slot - 8), 0);
+#endif
 
 	/* Set interleave mode */
 	if (max98396->interleave_mode)

@@ -17,7 +17,7 @@
 #include "../codecs/max98396.h"
 
 #ifdef ULTRASOUND_DEMO
-#define USE_TDM_MODE
+//#define USE_TDM_MODE
 #endif
 
 #ifdef USE_TDM_MODE
