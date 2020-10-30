@@ -117,6 +117,7 @@ config SND_SOC_ALL_CODECS
 	select SND_SOC_MAX98390 if I2C
 	select SND_SOC_MAX98373 if I2C
 	select SND_SOC_MAX98396 if I2C
+	select SND_SOC_MAX98050 if I2C	
 	select SND_SOC_MAX9850 if I2C
 	select SND_SOC_MAX9860 if I2C
 	select SND_SOC_MAX9759
@@ -803,6 +804,13 @@ config SND_SOC_MAX98396
 	depends on I2C
 	help
 	  Enable support for MAX98396 Amplifier with I/V Sense
+
+config SND_SOC_MAX98050
+	tristate "Maxim Integrated MAX98050 Speaker Amplifier"
+	depends on I2C
+	help
+	  Enable support for MAX98050 Amplifier with I/V Sense
+	  
 config SND_SOC_MAX9850
 	tristate
 

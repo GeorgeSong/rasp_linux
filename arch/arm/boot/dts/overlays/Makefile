@@ -25,6 +25,7 @@ dtbo-$(CONFIG_ARCH_BCM2835) += \
 	audioinjector-isolated-soundcard.dtbo \
 	audioinjector-ultra.dtbo \
 	audioinjector-wm8731-audio.dtbo \
+	audioinjector-max98050-audio.dtbo \
 	audioinjector-max98396-audio.dtbo \
 	audioinjector-max98390-audio.dtbo \
 	audioinjector-max98373-audio.dtbo \

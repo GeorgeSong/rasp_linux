@@ -16,6 +16,7 @@
 #include <linux/of_gpio.h>
 #include <sound/tlv.h>
 #include "max98396.h"
+#include "maxim_ultrasound.h"
 
 #ifdef ULTRASOUND_DEMO
 #define SPK_GAIN_MAX 0x08
