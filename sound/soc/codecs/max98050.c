@@ -36,7 +36,10 @@ int max_i2c_write(int addr, int value)
 	 * Return 0 if succeeded, return -1 if falied.
 	 */
     regmap_write(g_max98050->regmap,
-		addr, value);    
+		addr, value);
+#ifdef ULTRASOUND_DEMO		
+	usleep_range(5000, 6000);
+#endif	
 	return 0;
 }
 
