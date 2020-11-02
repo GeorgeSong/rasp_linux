@@ -20,6 +20,8 @@
 
 #ifdef ULTRASOUND_DEMO
 #define SPK_GAIN_MAX 0x08
+extern int max98050_ultrasound_init_params(int prams_rate, int params_format);
+extern void max98050_shutdown(bool onoff);
 #else
 #define SPK_GAIN_MAX 0x11
 #endif
@@ -377,6 +379,10 @@ static int max98396_dai_hw_params(struct snd_pcm_substream *substream,
 			MAX98396_IVADC_SR_MASK,
 			sampling_rate << MAX98396_IVADC_SR_SHIFT);
 
+#ifdef ULTRASOUND_DEMO
+	max98050_ultrasound_init_params(params_rate(params), max98396->ch_size);
+#endif			
+			
 	return max98396_set_clock(component, params);
 err:
 	pr_err("%s out error", __func__);
@@ -483,7 +489,7 @@ static int max98396_dac_event(struct snd_soc_dapm_widget *w,
 			MAX98396_PCM_RX_EN_MASK, 1);
 
 		regmap_write(max98396->regmap,
-			MAX98396_R210F_GLOBAL_EN, 1);
+			MAX98396_R210F_GLOBAL_EN, 1);	
 		break;
 	case SND_SOC_DAPM_POST_PMD:
 		regmap_update_bits(max98396->regmap,
@@ -493,6 +499,10 @@ static int max98396_dac_event(struct snd_soc_dapm_widget *w,
 		regmap_write(max98396->regmap,
 			MAX98396_R210F_GLOBAL_EN, 0);
 		max98396->tdm_mode = false;
+
+#ifdef ULTRASOUND_DEMO
+		max98050_shutdown(0);
+#endif			
 		break;
 	default:
 		return 0;

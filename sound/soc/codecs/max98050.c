@@ -16,7 +16,7 @@
 #include "max98050.h"
 #include "maxim_ultrasound.h"
 
-static struct max98050_priv *g_max98050; 
+static struct max98050_priv *g_max98050 = NULL; 
 
 
 /* =============== max98050_inf.c ================ */
@@ -25,9 +25,10 @@ int max_i2c_read(int addr, int *value)
 	/* Add i2c read function of the target system here
 	 * Return 0 if succeeded, return -1 if falied.
 	 */
-
-    regmap_read(g_max98050->regmap,
-		addr, value);
+	
+	if (g_max98050->regmap != NULL)
+		regmap_read(g_max98050->regmap,
+			addr, value);
 	return 0;
 }
 int max_i2c_write(int addr, int value)
@@ -35,8 +36,9 @@ int max_i2c_write(int addr, int value)
 	/* Add i2c write function of the target system here
 	 * Return 0 if succeeded, return -1 if falied.
 	 */
-    regmap_write(g_max98050->regmap,
-		addr, value);
+	if (g_max98050->regmap != NULL)
+		regmap_write(g_max98050->regmap,
+			addr, value);
 #ifdef ULTRASOUND_DEMO		
 	usleep_range(5000, 6000);
 #endif	
@@ -85,8 +87,10 @@ void max98050_get_mic_path(int mic_id)
 
 void max98050_shutdown(bool onoff)
 {
+	pr_info("[GEORGE] %s onoff : %d", __func__, onoff);
 	max_i2c_write(MAX98050_R20FF_SYS_LVL_EN, onoff ? 1 : 0);
 }
+EXPORT_SYMBOL(max98050_shutdown);
 
 void max98050_flt_config(bool onoff, int *coeff)
 {
@@ -369,23 +373,140 @@ static const struct regmap_config max98050_regmap = {
 };
 
 #ifdef ULTRASOUND_DEMO
-static int max98050_ultrasound_hw_param(struct max98050_priv *max98050)
+/* BCLKs per LRCLK */
+static const int max98050_bclk_sel_table[] = {
+	32, 48, 64, 96, 128, 192, 256, 384, 512,
+};
+
+static int MAX98050_get_bclk_sel(int bclk)
+{
+	int i;
+	/* match BCLKs per LRCLK */
+	for (i = 0; i < ARRAY_SIZE(max98050_bclk_sel_table); i++) {
+		if (max98050_bclk_sel_table[i] == bclk)
+			return i + 2;
+	}
+	return 0;
+}
+
+static int MAX98050_set_clock(int chan_sz)
+{
+	/* BCLK/LRCLK ratio calculation */
+	int blr_clk_ratio = 2 * chan_sz;
+	int value;
+
+	/* BCLK configuration */
+	value = MAX98050_get_bclk_sel(blr_clk_ratio);
+	pr_info("[GEORGE] %s value:%d", __func__, value);
+	if (!value) {
+		pr_info("[GEORGE] format unsupported %d\n", chan_sz);
+		return -EINVAL;
+	}
+	
+	max_i2c_write(MAX98050_R2021_PCM_CFG_2, value);
+		
+	pr_info("[GEORGE] %s out", __func__);
+	return 0;
+}
+
+static int max98050_hw_param(int prams_rate, int params_format)
+{
+	unsigned int sampling_rate = 0;
+	unsigned int chan_sz = 0;
+	
+	/* pcm mode configuration */
+	switch (params_format) {
+	case 16:
+		chan_sz = MAX98050_PCM_MODE_CFG_CHANSZ_16;
+		break;
+	case 24:
+		chan_sz = MAX98050_PCM_MODE_CFG_CHANSZ_24;
+		break;
+	case 32:
+		chan_sz = MAX98050_PCM_MODE_CFG_CHANSZ_32;
+		break;
+	default:
+		pr_info("[GEORGE] format unsupported %d\n", params_format);
+		goto err;
+	}
+	
+	max_i2c_write(MAX98050_R2020_PCM_CFG_1, 0x18);
+	
+	/* sampling rate configuration */
+	switch (prams_rate) {
+	case 8000:
+		sampling_rate = MAX98050_PCM_SR_8000;
+		break;
+	case 11025:
+		sampling_rate = MAX98050_PCM_SR_11025;
+		break;
+	case 12000:
+		sampling_rate = MAX98050_PCM_SR_12000;
+		break;
+	case 16000:
+		sampling_rate = MAX98050_PCM_SR_16000;
+		break;
+	case 22050:
+		sampling_rate = MAX98050_PCM_SR_22050;
+		break;
+	case 24000:
+		sampling_rate = MAX98050_PCM_SR_24000;
+		break;
+	case 32000:
+		sampling_rate = MAX98050_PCM_SR_32000;
+		break;
+	case 44100:
+		sampling_rate = MAX98050_PCM_SR_44100;
+		break;
+	case 48000:
+		sampling_rate = MAX98050_PCM_SR_48000;
+		break;
+	case 88200:
+		sampling_rate = MAX98050_PCM_SR_88200;
+		break;
+	case 96000:
+		sampling_rate = MAX98050_PCM_SR_96000;
+		break;
+	default:
+		pr_info("[GEORGE] rate %d not supported\n", prams_rate);
+		goto err;
+	}	
+	
+	sampling_rate |= (sampling_rate) << MAX98050_IVADC_SR_SHIFT;
+	max_i2c_write(MAX98050_R2024_PCM_SR_CFG, sampling_rate);
+	
+	MAX98050_set_clock(params_format);
+		
+	return 0;
+
+err:
+	pr_err("[GEORGE] %s out error", __func__);
+	return -EINVAL;	
+}
+
+int max98050_ultrasound_init_params(int prams_rate, int params_format)
 {	
 	int ret = 0;
 
-	pr_info("[STEVE] %s in", __func__);
+	pr_info("[GEORGE] %s in", __func__);
 	
 	max_i2c_write(MAX98050_R20FF_SYS_LVL_EN, 0);
 	max_i2c_write(MAX98050_R2000_SW_RESET, 1);
-	max_i2c_write(MAX98050_R2020_PCM_CFG_1, 0x18);
-	max_i2c_write(MAX98050_R2021_PCM_CFG_2, 0x04);
+	
+	max98050_hw_param(prams_rate, params_format);
+	
+	//max_i2c_write(MAX98050_R2020_PCM_CFG_1, 0x18);
+	//max_i2c_write(MAX98050_R2021_PCM_CFG_2, 0x04);
 	max_i2c_write(MAX98050_R2022_PCM_CFG_3, 0x20);
-	max_i2c_write(MAX98050_R2024_PCM_SR_CFG, 0xaa);
+	//max_i2c_write(MAX98050_R2024_PCM_SR_CFG, 0xaa);
 	max_i2c_write(MAX98050_R2026_PCM_PLAY_CH_SRC, 0x0);
 	max_i2c_write(MAX98050_R2028_PCM_REC_CH1_SLOT_SEL, 0x1);
 	max_i2c_write(MAX98050_R2029_PCM_REC_CH2_SLOT_SEL, 0x1);
 	max_i2c_write(MAX98050_R202A_PCM_REC_CH3_SLOT_SEL, 0x1);
-	max_i2c_write(MAX98050_R203D_HIDDEN, 0x1);
+	
+	if(prams_rate > 48000)
+		max_i2c_write(MAX98050_R203D_HIDDEN, 0x1);
+	
 	max_i2c_write(MAX98050_R203F_PCM_EN, 0x3);
 	max_i2c_write(MAX98050_R2040_MILLI_IF_REC_SYNC, 0x0);
 	max_i2c_write(MAX98050_R2041_MILLI_IF_CLK_MON_CFG, 0x0);
@@ -446,7 +567,10 @@ static int max98050_ultrasound_hw_param(struct max98050_priv *max98050)
 	max_i2c_write(MAX98050_R20DC_DIG_FLT_CH_CFG, 0x0);
 	max_i2c_write(MAX98050_R20DD_DIG_FLT_BQ_BANK_SEL, 0x0);
 	max_i2c_write(MAX98050_R20DE_DIG_FLT_MUTE_CTRL, 0x3);
-	max_i2c_write(MAX98050_R20DF_DIG_FLT_EN, 0x3);
+	
+	if(prams_rate > 48000)
+		max_i2c_write(MAX98050_R20DF_DIG_FLT_EN, 0x3);
+	
 	max_i2c_write(MAX98050_R20F1_CLK_MON_CFG, 0x1);
 	max_i2c_write(MAX98050_R20F2_CLK_MON_EN, 0x1);
 	max_i2c_write(MAX98050_R20F4_DATA_MON_CFG, 0x0);
@@ -454,10 +578,11 @@ static int max98050_ultrasound_hw_param(struct max98050_priv *max98050)
 	max_i2c_write(MAX98050_R20FE_SYS_LVL_CFG, 0x0);
 	max_i2c_write(MAX98050_R20FF_SYS_LVL_EN, 0x1);
 
-	pr_info("[STEVE] %s out", __func__);
+	pr_info("[GEORGE] %s out", __func__);
 	
 	return ret;
 }
+EXPORT_SYMBOL(max98050_ultrasound_init_params);
 #endif
 
 static int max98050_i2c_probe(struct i2c_client *i2c,
@@ -509,7 +634,7 @@ static int max98050_i2c_probe(struct i2c_client *i2c,
 
 	/* set Ultrasound hw parameters */
 #ifdef ULTRASOUND_DEMO
-	max98050_ultrasound_hw_param(max98050);
+	max98050_ultrasound_init_params(96000, 32);
 	if (ret < 0) {
 		dev_err(&i2c->dev,
 			"Failed to wrtie for ultrasound hw param [%d]\n", ret);
