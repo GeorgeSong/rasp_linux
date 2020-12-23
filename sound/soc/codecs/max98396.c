@@ -19,11 +19,8 @@
 #include "maxim_ultrasound.h"
 
 #ifdef ULTRASOUND_DEMO
-#define SPK_GAIN_MAX 0x08
 extern int max98050_ultrasound_init_params(int prams_rate, int params_format);
 extern void max98050_shutdown(bool onoff);
-#else
-#define SPK_GAIN_MAX 0x11
 #endif
 
 static struct reg_default max98396_reg[] = {
@@ -192,7 +189,7 @@ static int max98396_dai_set_fmt(struct snd_soc_dai *codec_dai, unsigned int fmt)
 	unsigned int format = 0;
 	unsigned int invert = 0;
 
-	pr_info("[RYAN] %s in, fmt : 0x%08x", __func__, fmt);
+	pr_info("[DEMO] %s in, fmt : 0x%08x", __func__, fmt);
 	dev_dbg(component->dev, "%s: fmt 0x%08X\n", __func__, fmt);
 
 	switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
@@ -208,9 +205,9 @@ static int max98396_dai_set_fmt(struct snd_soc_dai *codec_dai, unsigned int fmt)
 	}
 
 	regmap_update_bits(max98396->regmap,
-		MAX98396_R2042_PCM_CLK_SETUP,
-		MAX98396_PCM_MODE_CFG_PCM_BCLKEDGE,
-		invert);
+			   MAX98396_R2042_PCM_CLK_SETUP,
+			   MAX98396_PCM_MODE_CFG_PCM_BCLKEDGE,
+			   invert);
 
 	/* interface format */
 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
@@ -234,8 +231,8 @@ static int max98396_dai_set_fmt(struct snd_soc_dai *codec_dai, unsigned int fmt)
 		MAX98396_R2041_PCM_MODE_CFG,
 		MAX98396_PCM_MODE_CFG_FORMAT_MASK,
 		format << MAX98396_PCM_MODE_CFG_FORMAT_SHIFT);
-		
-	pr_info("[RYAN] %s out, format : %d", __func__, format);
+
+	pr_info("[DEMO] %s out, format : %d", __func__, format);
 	return 0;
 }
 
@@ -267,7 +264,7 @@ static int max98396_set_clock(struct snd_soc_component *component,
 	if (!max98396->tdm_mode) {
 		/* BCLK configuration */
 		value = max98396_get_bclk_sel(blr_clk_ratio);
-		pr_info("[RYAN] %s value:%d", __func__, value);
+		pr_info("[DEMO] %s value:%d", __func__, value);
 		if (!value) {
 			dev_err(component->dev, "format unsupported %d\n",
 				params_format(params));
@@ -275,17 +272,17 @@ static int max98396_set_clock(struct snd_soc_component *component,
 		}
 
 		regmap_update_bits(max98396->regmap,
-			MAX98396_R2042_PCM_CLK_SETUP,
-			MAX98396_PCM_CLK_SETUP_BSEL_MASK,
-			value);
+				   MAX98396_R2042_PCM_CLK_SETUP,
+				   MAX98396_PCM_CLK_SETUP_BSEL_MASK,
+				   value);
 	}
-	pr_info("[RYAN] %s out", __func__);
+	pr_info("[DEMO] %s out", __func__);
 	return 0;
 }
 
 static int max98396_dai_hw_params(struct snd_pcm_substream *substream,
-	struct snd_pcm_hw_params *params,
-	struct snd_soc_dai *dai)
+				  struct snd_pcm_hw_params *params,
+				  struct snd_soc_dai *dai)
 {
 	struct snd_soc_component *component = dai->component;
 	struct max98396_priv *max98396 =
@@ -313,8 +310,8 @@ static int max98396_dai_hw_params(struct snd_pcm_substream *substream,
 	max98396->ch_size = snd_pcm_format_width(params_format(params));
 
 	regmap_update_bits(max98396->regmap,
-		MAX98396_R2041_PCM_MODE_CFG,
-		MAX98396_PCM_MODE_CFG_CHANSZ_MASK, chan_sz);
+			   MAX98396_R2041_PCM_MODE_CFG,
+			   MAX98396_PCM_MODE_CFG_CHANSZ_MASK, chan_sz);
 
 	dev_dbg(component->dev, "format supported %d",
 		params_format(params));
@@ -362,27 +359,27 @@ static int max98396_dai_hw_params(struct snd_pcm_substream *substream,
 
 	/* set DAI_SR to correct LRCLK frequency */
 	regmap_update_bits(max98396->regmap,
-		MAX98396_R2043_PCM_SR_SETUP,
-		MAX98396_PCM_SR_MASK,
-		sampling_rate);
+			   MAX98396_R2043_PCM_SR_SETUP,
+			   MAX98396_PCM_SR_MASK,
+			   sampling_rate);
 
 	/* set sampling rate of IV */
 	if (max98396->interleave_mode &&
 	    sampling_rate > MAX98396_PCM_SR_16000)
 		regmap_update_bits(max98396->regmap,
-			MAX98396_R2043_PCM_SR_SETUP,
-			MAX98396_IVADC_SR_MASK,
-			(sampling_rate - 3) << MAX98396_IVADC_SR_SHIFT);
+				   MAX98396_R2043_PCM_SR_SETUP,
+				   MAX98396_IVADC_SR_MASK,
+				   (sampling_rate - 3) << MAX98396_IVADC_SR_SHIFT);
 	else
 		regmap_update_bits(max98396->regmap,
-			MAX98396_R2043_PCM_SR_SETUP,
-			MAX98396_IVADC_SR_MASK,
-			sampling_rate << MAX98396_IVADC_SR_SHIFT);
+				   MAX98396_R2043_PCM_SR_SETUP,
+				   MAX98396_IVADC_SR_MASK,
+				   sampling_rate << MAX98396_IVADC_SR_SHIFT);
 
 #ifdef ULTRASOUND_DEMO
 	max98050_ultrasound_init_params(params_rate(params), max98396->ch_size);
-#endif			
-			
+#endif
+
 	return max98396_set_clock(component, params);
 err:
 	pr_err("%s out error", __func__);
@@ -390,8 +387,8 @@ err:
 }
 
 static int max98396_dai_tdm_slot(struct snd_soc_dai *dai,
-	unsigned int tx_mask, unsigned int rx_mask,
-	int slots, int slot_width)
+				 unsigned int tx_mask, unsigned int rx_mask,
+				 int slots, int slot_width)
 {
 	struct snd_soc_component *component = dai->component;
 	struct max98396_priv *max98396 =
@@ -399,8 +396,8 @@ static int max98396_dai_tdm_slot(struct snd_soc_dai *dai,
 	int bsel = 0;
 	unsigned int chan_sz = 0;
 
-	pr_info("[RYAN] %s rx_mask : 0x%08x, tx_mask : 0x%08x", __func__, rx_mask, tx_mask);
-	
+	pr_info("[DEMO] %s rx_mask : 0x%08x, tx_mask : 0x%08x", __func__, rx_mask, tx_mask);
+
 	if (!tx_mask && !rx_mask && !slots && !slot_width)
 		max98396->tdm_mode = false;
 	else
@@ -415,9 +412,9 @@ static int max98396_dai_tdm_slot(struct snd_soc_dai *dai,
 	}
 
 	regmap_update_bits(max98396->regmap,
-		MAX98396_R2042_PCM_CLK_SETUP,
-		MAX98396_PCM_CLK_SETUP_BSEL_MASK,
-		bsel);
+			   MAX98396_R2042_PCM_CLK_SETUP,
+			   MAX98396_PCM_CLK_SETUP_BSEL_MASK,
+			   bsel);
 
 	/* Channel size configuration */
 	switch (slot_width) {
@@ -437,28 +434,28 @@ static int max98396_dai_tdm_slot(struct snd_soc_dai *dai,
 	}
 
 	regmap_update_bits(max98396->regmap,
-		MAX98396_R2041_PCM_MODE_CFG,
-		MAX98396_PCM_MODE_CFG_CHANSZ_MASK, chan_sz);
+			   MAX98396_R2041_PCM_MODE_CFG,
+			   MAX98396_PCM_MODE_CFG_CHANSZ_MASK, chan_sz);
 
 	/* Rx slot configuration */
 	regmap_update_bits(max98396->regmap,
-		MAX98396_R2056_PCM_RX_SRC2,
-		MAX98396_PCM_DMIX_CH0_SRC_MASK,
-		rx_mask);
+			   MAX98396_R2056_PCM_RX_SRC2,
+			   MAX98396_PCM_DMIX_CH0_SRC_MASK,
+			   rx_mask);
 	regmap_update_bits(max98396->regmap,
-		MAX98396_R2056_PCM_RX_SRC2,
-		MAX98396_PCM_DMIX_CH1_SRC_MASK,
-		rx_mask << MAX98396_PCM_DMIX_CH1_SHIFT);
+			   MAX98396_R2056_PCM_RX_SRC2,
+			   MAX98396_PCM_DMIX_CH1_SRC_MASK,
+			   rx_mask << MAX98396_PCM_DMIX_CH1_SHIFT);
 
 	/* Tx slot Hi-Z configuration */
 	regmap_write(max98396->regmap,
-		MAX98396_R2053_PCM_TX_HIZ_CTRL_8,
-		~tx_mask & 0xFF);
+		     MAX98396_R2053_PCM_TX_HIZ_CTRL_8,
+		     ~tx_mask & 0xFF);
 	regmap_write(max98396->regmap,
-		MAX98396_R2052_PCM_TX_HIZ_CTRL_7,
-		(~tx_mask & 0xFF00) >> 8);
+		     MAX98396_R2052_PCM_TX_HIZ_CTRL_7,
+		     (~tx_mask & 0xFF00) >> 8);
 
-	pr_info("[RYAN] %s out", __func__);
+	pr_info("[DEMO] %s out", __func__);
 	return 0;
 }
 
@@ -474,40 +471,62 @@ static const struct snd_soc_dai_ops max98396_dai_ops = {
 };
 
 static int max98396_dac_event(struct snd_soc_dapm_widget *w,
-	struct snd_kcontrol *kcontrol, int event)
+			      struct snd_kcontrol *kcontrol, int event)
 {
 	struct snd_soc_component *component =
 		snd_soc_dapm_to_component(w->dapm);
 	struct max98396_priv *max98396 =
-		snd_soc_component_get_drvdata(component);		
-		
-	pr_info("[RYAN] %s event : %d", __func__, event);
+		snd_soc_component_get_drvdata(component);
+
+	pr_info("[DEMO] %s event : %d", __func__, event);
 	switch (event) {
 	case SND_SOC_DAPM_POST_PMU:
 		regmap_update_bits(max98396->regmap,
-			MAX98396_R205E_PCM_RX_EN,
-			MAX98396_PCM_RX_EN_MASK, 1);
+				   MAX98396_R205E_PCM_RX_EN,
+				   MAX98396_PCM_RX_EN_MASK, 1);
 
 		regmap_write(max98396->regmap,
-			MAX98396_R210F_GLOBAL_EN, 1);	
+			     MAX98396_R210F_GLOBAL_EN, 1);
+		#ifdef ULTRASOUND_DEMO
+		/* print major register values */
+		{
+			int reg, reg1, reg2;
+			int ret = regmap_read(max98396->regmap,
+					      MAX98396_R2091_AMP_PATH_GAIN, &reg);
+			ret = regmap_read(max98396->regmap,
+					  MAX98396_R20E4_IV_SENSE_PATH_EN, &reg1);
+			pr_info("[DEMO] SPK gain : %d dB, Measurement EN : 0x%x\n", reg + 4, reg1);
+			ret = regmap_read(max98396->regmap,
+					  MAX98396_R2055_PCM_RX_SRC1, &reg);
+			pr_info("[DEMO] Rx source : %s\n",
+				(reg == 0) ? "Left" : (reg == 1) ? "Right" : "(L+R)/2");
+			ret = regmap_read(max98396->regmap,
+					  MAX98396_R209F_BYPASS_PATH_CFG, &reg);
+			ret = regmap_read(max98396->regmap,
+					  MAX98396_R205E_PCM_RX_EN, &reg1);
+			ret = regmap_read(max98396->regmap,
+					  MAX98396_R2058_PCM_BYPASS_SRC, &reg2);
+			pr_info("[DEMO] BYPASS EN : 0x%x, WB FLT EN : 0x%x, BYPASS_SLOT : 0x%x\n", reg, reg1, reg2);
+		}
+		#endif
 		break;
 	case SND_SOC_DAPM_POST_PMD:
 		regmap_update_bits(max98396->regmap,
-			MAX98396_R205E_PCM_RX_EN,
-			MAX98396_PCM_RX_EN_MASK, 0);
+				   MAX98396_R205E_PCM_RX_EN,
+				   MAX98396_PCM_RX_EN_MASK, 0);
 
 		regmap_write(max98396->regmap,
-			MAX98396_R210F_GLOBAL_EN, 0);
+			     MAX98396_R210F_GLOBAL_EN, 0);
 		max98396->tdm_mode = false;
 
 #ifdef ULTRASOUND_DEMO
 		max98050_shutdown(0);
-#endif			
+#endif
 		break;
 	default:
 		return 0;
 	}
-	
+
 	return 0;
 }
 
@@ -516,7 +535,7 @@ static const char * const max98396_switch_text[] = {
 
 static const struct soc_enum dai_sel_enum =
 	SOC_ENUM_SINGLE(MAX98396_R2055_PCM_RX_SRC1,
-		0, 3, max98396_switch_text);
+			0, 3, max98396_switch_text);
 
 static const struct snd_kcontrol_new max98396_dai_controls =
 	SOC_DAPM_ENUM("DAI Sel", dai_sel_enum);
@@ -526,17 +545,17 @@ static const struct snd_kcontrol_new max98396_vi_control =
 
 static const struct snd_soc_dapm_widget max98396_dapm_widgets[] = {
 SND_SOC_DAPM_DAC_E("Amp Enable", "HiFi Playback",
-	MAX98396_R20AF_AMP_EN, 0, 0, max98396_dac_event,
-	SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_POST_PMD),
+		   MAX98396_R20AF_AMP_EN, 0, 0, max98396_dac_event,
+		   SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_POST_PMD),
 SND_SOC_DAPM_MUX("DAI Sel Mux", SND_SOC_NOPM, 0, 0,
-	&max98396_dai_controls),
+		 &max98396_dai_controls),
 SND_SOC_DAPM_OUTPUT("BE_OUT"),
 SND_SOC_DAPM_AIF_OUT("Voltage Sense", "HiFi Capture", 0,
-	MAX98396_R20E4_IV_SENSE_PATH_EN, 0, 0),
+		     MAX98396_R20E4_IV_SENSE_PATH_EN, 0, 0),
 SND_SOC_DAPM_AIF_OUT("Current Sense", "HiFi Capture", 0,
-	MAX98396_R20E4_IV_SENSE_PATH_EN, 1, 0),
+		     MAX98396_R20E4_IV_SENSE_PATH_EN, 1, 0),
 SND_SOC_DAPM_SWITCH("VI Sense", SND_SOC_NOPM, 0, 0,
-	&max98396_vi_control),
+		    &max98396_vi_control),
 SND_SOC_DAPM_SIGGEN("VMON"),
 SND_SOC_DAPM_SIGGEN("IMON"),
 SND_SOC_DAPM_SIGGEN("FBMON"),
@@ -598,7 +617,7 @@ static const struct snd_kcontrol_new max98396_snd_controls[] = {
 SOC_SINGLE_TLV("Digital Volume", MAX98396_R2090_AMP_VOL_CTRL,
 	0, 0x7F, 1, max98396_digital_tlv),
 SOC_SINGLE_TLV("Speaker Volume", MAX98396_R2091_AMP_PATH_GAIN,
-	0, SPK_GAIN_MAX, 0, max98396_spk_tlv),
+	0, 0x11, 0, max98396_spk_tlv),
 /* Volume Ramp Up/Down Enable*/
 SOC_SINGLE("Ramp Up Switch", MAX98396_R2092_AMP_DSP_CFG,
 	MAX98396_DSP_SPK_VOL_RMPUP_SHIFT, 1, 0),
@@ -620,6 +639,12 @@ SOC_SINGLE("DHT Switch", MAX98396_R20DF_DHT_EN, 0, 1, 0),
 /* Brownout Protection Engine */
 SOC_SINGLE("BPE Switch", MAX98396_R210D_BPE_EN, 0, 1, 0),
 SOC_SINGLE("BPE Limiter Switch", MAX98396_R210D_BPE_EN, 1, 1, 0),
+/* Bypass Path Enable */
+SOC_SINGLE("Bypass Path Switch",
+	   MAX98396_R205E_PCM_RX_EN, 1, 1, 0),
+/* Wideband Filter Enable */
+SOC_SINGLE("Wideband Filter Switch",
+	   MAX98396_R209F_BYPASS_PATH_CFG, 1, 1, 0),
 };
 
 static const struct snd_soc_dapm_route max98396_audio_map[] = {
@@ -660,10 +685,10 @@ static void max98396_reset(struct max98396_priv *max98396, struct device *dev)
 {
 	int ret, reg, count;
 
-	pr_info("[RYAN] %s in", __func__);
+	pr_info("[DEMO] %s in", __func__);
 	/* Software Reset */
 	ret = regmap_write(max98396->regmap,
-		MAX98396_R2000_SW_RESET, 1);
+			   MAX98396_R2000_SW_RESET, 1);
 	if (ret)
 		dev_err(dev, "Reset command failed. (ret:%d)\n", ret);
 
@@ -672,7 +697,7 @@ static void max98396_reset(struct max98396_priv *max98396, struct device *dev)
 		usleep_range(10000, 11000);
 		/* Software Reset Verification */
 		ret = regmap_read(max98396->regmap,
-			MAX98396_R21FF_REVISION_ID, &reg);
+				  MAX98396_R21FF_REVISION_ID, &reg);
 		if (!ret) {
 			dev_info(dev, "Reset completed (retry:%d)\n", count);
 			return;
@@ -687,81 +712,85 @@ static int max98396_probe(struct snd_soc_component *component)
 	struct max98396_priv *max98396 =
 		snd_soc_component_get_drvdata(component);
 
-	pr_info("[RYAN] %s in", __func__);
+	pr_info("[DEMO] %s in", __func__);
 	/* Software Reset */
 	max98396_reset(max98396, component->dev);
 
 	/* disable all monitoring */
 	regmap_write(max98396->regmap,
-		MAX98396_R203F_ENABLE_CTRLS, 0x00);
-	
+		     MAX98396_R203F_ENABLE_CTRLS, 0x00);
+
 	/* L/R mix configuration */
 	regmap_write(max98396->regmap,
-		MAX98396_R2055_PCM_RX_SRC1, 0x00);
+		     MAX98396_R2055_PCM_RX_SRC1, 0x00);
 
 	regmap_write(max98396->regmap,
-		MAX98396_R2056_PCM_RX_SRC2, 0x10);
+		     MAX98396_R2056_PCM_RX_SRC2, 0x10);
 	/* Tx enable */
 	regmap_write(max98396->regmap,
-		MAX98396_R205F_PCM_TX_EN, 1);
+		     MAX98396_R205F_PCM_TX_EN, 1);
 	/* Enable DC blocker */
 	regmap_update_bits(max98396->regmap,
-		MAX98396_R2092_AMP_DSP_CFG, 0x21, 0x01);
+			   MAX98396_R2092_AMP_DSP_CFG, 0x21, 0x01);
 #ifdef ULTRASOUND_DEMO
 	/* PCM V MON enable */
 	regmap_write(max98396->regmap,
-		MAX98396_R205D_PCM_TX_SRC_EN, 1);
+		     MAX98396_R205D_PCM_TX_SRC_EN, 1);
 	/* Enable Wideband Filter on DSP Playback */
 	regmap_update_bits(max98396->regmap,
-		MAX98396_R2092_AMP_DSP_CFG, 0x40, 0x40);		
+			   MAX98396_R2092_AMP_DSP_CFG, 0x40, 0x40);
 	/* Enable Wideband Filter on V sense */
 	regmap_update_bits(max98396->regmap,
-		MAX98396_R20E0_IV_SENSE_PATH_CFG, 8, 8);
-#endif		
+			   MAX98396_R20E0_IV_SENSE_PATH_CFG, 8, 8);
+#endif
+	/* Enable Bypass Source */
+	regmap_write(max98396->regmap,
+		     MAX98396_R2058_PCM_BYPASS_SRC,
+		     max98396->bypass_slot);
 	/* Enable IMON VMON DC blocker */
 	regmap_update_bits(max98396->regmap,
-		MAX98396_R20E0_IV_SENSE_PATH_CFG, 3, 3);
+			   MAX98396_R20E0_IV_SENSE_PATH_CFG, 3, 3);
 	/* voltage, current slot configuration */
 	regmap_write(max98396->regmap,
-		MAX98396_R2044_PCM_TX_CTRL_1,
-		max98396->v_slot);
+		     MAX98396_R2044_PCM_TX_CTRL_1,
+		     max98396->v_slot);
 	regmap_write(max98396->regmap,
-		MAX98396_R2045_PCM_TX_CTRL_2,
-		max98396->i_slot);
+		     MAX98396_R2045_PCM_TX_CTRL_2,
+		     max98396->i_slot);
 
 	if (max98396->v_slot < 8)
 		regmap_update_bits(max98396->regmap,
-			MAX98396_R2053_PCM_TX_HIZ_CTRL_8,
-			1 << max98396->v_slot, 0);
+				   MAX98396_R2053_PCM_TX_HIZ_CTRL_8,
+				   1 << max98396->v_slot, 0);
 	else
 		regmap_update_bits(max98396->regmap,
-			MAX98396_R2052_PCM_TX_HIZ_CTRL_7,
-			1 << (max98396->v_slot - 8), 0);
+				   MAX98396_R2052_PCM_TX_HIZ_CTRL_7,
+				   1 << (max98396->v_slot - 8), 0);
 
 #ifndef ULTRASOUND_DEMO
 	if (max98396->i_slot < 8)
 		regmap_update_bits(max98396->regmap,
-			MAX98396_R2053_PCM_TX_HIZ_CTRL_8,
-			1 << max98396->i_slot, 0);
+				   MAX98396_R2053_PCM_TX_HIZ_CTRL_8,
+				   1 << max98396->i_slot, 0);
 	else
 		regmap_update_bits(max98396->regmap,
-			MAX98396_R2052_PCM_TX_HIZ_CTRL_7,
-			1 << (max98396->i_slot - 8), 0);
+				   MAX98396_R2052_PCM_TX_HIZ_CTRL_7,
+				   1 << (max98396->i_slot - 8), 0);
 #endif
 
 	/* Set interleave mode */
 	if (max98396->interleave_mode)
 		regmap_update_bits(max98396->regmap,
-			MAX98396_R2041_PCM_MODE_CFG,
-			MAX98396_PCM_TX_CH_INTERLEAVE_MASK,
-			MAX98396_PCM_TX_CH_INTERLEAVE_MASK);
+				   MAX98396_R2041_PCM_MODE_CFG,
+				   MAX98396_PCM_TX_CH_INTERLEAVE_MASK,
+				   MAX98396_PCM_TX_CH_INTERLEAVE_MASK);
 
 	regmap_update_bits(max98396->regmap,
-		MAX98396_R2038_CLK_MON_CTRL,
-		MAX98396_CLK_MON_AUTO_RESTART_MASK,
-		MAX98396_CLK_MON_AUTO_RESTART_MASK);
+			   MAX98396_R2038_CLK_MON_CTRL,
+			   MAX98396_CLK_MON_AUTO_RESTART_MASK,
+			   MAX98396_CLK_MON_AUTO_RESTART_MASK);
 
-	pr_info("[RYAN] %s out", __func__);
+	pr_info("[DEMO] %s out", __func__);
 	return 0;
 }
 
@@ -829,6 +858,12 @@ static void max98396_slot_config(struct i2c_client *i2c,
 		max98396->i_slot = value & 0xF;
 	else
 		max98396->i_slot = 1;
+
+	if (!device_property_read_u32(dev, "maxim,bypass-slot-no", &value))
+		max98396->bypass_slot = value & 0xF;
+	else
+		max98396->bypass_slot = 0;
+
 	if (dev->of_node) {
 		max98396->reset_gpio = of_get_named_gpio(dev->of_node,
 						"maxim,reset-gpio", 0);
@@ -854,7 +889,7 @@ static int max98396_i2c_probe(struct i2c_client *i2c,
 	int reg = 0;
 	struct max98396_priv *max98396 = NULL;
 
-	pr_info("[RYAN] %s in", __func__);
+	pr_info("[DEMO] %s in", __func__);
 	max98396 = devm_kzalloc(&i2c->dev, sizeof(*max98396), GFP_KERNEL);
 
 	if (!max98396) {
@@ -914,7 +949,7 @@ static int max98396_i2c_probe(struct i2c_client *i2c,
 	if (ret < 0)
 		dev_err(&i2c->dev, "Failed to register codec: %d\n", ret);
 
-	pr_info("[RYAN] %s out", __func__);
+	pr_info("[DEMO] %s out", __func__);
 	return ret;
 }
 

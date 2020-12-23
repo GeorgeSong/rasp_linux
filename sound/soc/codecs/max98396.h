@@ -228,6 +228,7 @@ struct max98396_priv {
 	int reset_gpio;
 	unsigned int v_slot;
 	unsigned int i_slot;
+	unsigned int bypass_slot;
 	bool interleave_mode;
 	unsigned int ch_size;
 	bool tdm_mode;

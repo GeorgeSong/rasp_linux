@@ -25,6 +25,7 @@
 				reg = <0x38>;
 	                     maxim,vmon-slot-no = <0>;
 	                     maxim,imon-slot-no = <1>;
+	                     maxim,bypass-slot-no = <1>;
 	                     maxim,interleave-mode = <0>;
 			};
 		};
