@@ -527,9 +527,13 @@ int max98050_ultrasound_init_params(int prams_rate, int params_format)
 	max_i2c_write(MAX98050_R2086_AMIC3_CFG_1, 0x13);
 	max_i2c_write(MAX98050_R2087_AMIC3_CFG_2, 0x3);
 	max_i2c_write(MAX98050_R208A_AMIC_PWR_DN_CTRL, 0x0);
-	max_i2c_write(MAX98050_R208B_AMIC_BIAS_CFG, 0x2);
+	max_i2c_write(MAX98050_R208B_AMIC_BIAS_CFG, 0x17); /* MIC BIAS */
 	max_i2c_write(MAX98050_R208C_AMIC_BIAS_OUTPUT_EN, 0x7);
 	max_i2c_write(MAX98050_R208F_AMIC_EN, 0x7);
+	//max_i2c_write(MAX98050_R20A1_REC_CH1_CFG_2, 0x60); /* DIGITAL GAIN 12dB*/
+	//max_i2c_write(MAX98050_R20A5_REC_CH2_CFG_2, 0x60); /* DIGITAL GAIN 12dB*/
+	max_i2c_write(MAX98050_R20A1_REC_CH1_CFG_2, 0xF8); /* DIGITAL GAIN AMIC 1 31dB*/
+	max_i2c_write(MAX98050_R20A5_REC_CH2_CFG_2, 0xF8); /* DIGITAL GAIN AMIC 2 31dB*/
 	max_i2c_write(MAX98050_R20AF_REC_CH_EN, 0x7);
 	max_i2c_write(MAX98050_R20B0_DIG_FLT_CH1_BANK_A, 0x0);
 	max_i2c_write(MAX98050_R20B1_DIG_FLT_CH1_BANK_A_VOL, 0x0);
