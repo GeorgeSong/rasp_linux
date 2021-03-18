@@ -790,6 +790,11 @@ static int max98396_probe(struct snd_soc_component *component)
 			   MAX98396_CLK_MON_AUTO_RESTART_MASK,
 			   MAX98396_CLK_MON_AUTO_RESTART_MASK);
 
+	/* Let's add this to device tree later : Use PVDD mode to avoid the glitch issue. */
+	regmap_write(max98396->regmap,
+		     MAX98396_R2098_SPK_CLS_DG_MODE,
+		     1);
+
 	pr_info("[DEMO] %s out", __func__);
 	return 0;
 }
